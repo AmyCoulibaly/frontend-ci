@@ -1,3 +1,7 @@
+## Captures d'écran
+![Accueil](docs/captures/accueil1.png)
+![Espace patient](docs/captures/patient_medecin.png)
+![Espace médecin](docs/captures/medecin_tableau_de_bord.png)
 # frontend-ci : e-Santé Sénégal (interface React)
 
 Interface web de la plateforme de téléconsultation **e-Santé Sénégal**, conforme au document de modélisation UML (cas d'utilisation, classes, séquences, MCD/MLD).
