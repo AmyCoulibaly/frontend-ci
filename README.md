@@ -1,5 +1,5 @@
 ## Captures d'écran
-![Accueil](docs/captures/accueil1.png)
+![Accueil](docs/captures/acceuil1.png)
 ![Espace patient](docs/captures/patient_medecin.png)
 ![Espace médecin](docs/captures/medecin_tableau_de_bord.png)
 # frontend-ci : e-Santé Sénégal (interface React)
