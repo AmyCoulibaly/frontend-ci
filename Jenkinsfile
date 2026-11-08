@@ -5,7 +5,7 @@ pipeline {
   agent any
 
   environment {
-    DOCKERHUB_USER = 'VOTRE_USER_DOCKERHUB'          // à remplacer
+    DOCKERHUB_USER = 'mbenend'          // à remplacer
     IMAGE          = "${DOCKERHUB_USER}/esante-frontend"
     TAG            = "${env.BUILD_NUMBER}"
     TEST_IMAGE     = 'esante-frontend-test'
