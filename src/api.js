@@ -157,8 +157,14 @@ export const api = {
     return { password: m.DEMO_PASSWORD, patient: m.demoEmail('Awa', 'Diop'), medecin: m.demoEmail('Cheikh', 'Fall') };
   },
 
-  // POST /api/auth/register
-  register: (d) => call('/auth/register', { method: 'POST', body: d }, (db) => db.register(d)),
+  // POST /api/auth/register  (le backend exige `role` et refuse les champs facultatifs nuls ou vides)
+  register: (d) => {
+    const body = { role: 'PATIENT' };
+    Object.entries(d).forEach(([k, v]) => {
+      if (v !== null && v !== undefined && v !== '') body[k] = v;
+    });
+    return call('/auth/register', { method: 'POST', body }, (db) => db.register(d));
+  },
 
   // POST /api/auth/login -> jeton JWT ; le profil vient de la réponse ou des claims du jeton
   async login(email, password) {
@@ -201,16 +207,27 @@ export const api = {
     ),
   supprimerDisponibilite: (id) => call(`/disponibilites/${id}`, { method: 'DELETE' }, (db) => db.supprimerDisponibilite(me(), id)),
 
-  // POST /api/rendezvous  { id_medecin, id_creneau, motif }  -> 201, ou 409 si le créneau vient d'être pris
-  reserver: (body) => call('/rendezvous', { method: 'POST', body }, (db) => db.reserver(me(), body), normRdv),
+  // POST /api/rendezvous  { id_disponibilite, motif }  -> 201, ou 409 si le créneau vient d'être pris
+  reserver: (body) =>
+    call(
+      '/rendezvous',
+      { method: 'POST', body: { id_disponibilite: body.id_creneau, motif: body.motif } },
+      (db) => db.reserver(me(), body),
+      normRdv
+    ),
 
-  // GET /api/patients/{id}/rendezvous  ·  GET /api/medecins/{id}/rendezvous?date=AAAA-MM-JJ (date facultative)
+  // GET /api/patients/{id}/rendezvous  ·  GET /api/rendezvous?date=AAAA-MM-JJ|today (agenda du médecin connecté)
   rdvPatient: (idPatient) => call(`/patients/${idPatient}/rendezvous`, {}, (db) => db.rdvPatient(idPatient), list(normRdv)),
-  rdvMedecin: (idMedecin, date) =>
-    call(`/medecins/${idMedecin}/rendezvous${qs({ date })}`, {}, (db) => db.rdvMedecin(idMedecin, date), list(normRdv)),
+  rdvMedecin: (idMedecin, date) => call(`/rendezvous${qs({ date })}`, {}, (db) => db.rdvMedecin(idMedecin, date), list(normRdv)),
 
-  // PUT /api/rendezvous/{id}  { statut } ou { id_creneau } (modifier)
-  majRdv: (id, patch) => call(`/rendezvous/${id}`, { method: 'PUT', body: patch }, (db) => db.majRdv(me(), id, patch), normRdv),
+  // PUT /api/rendezvous/{id}  { statut } ou { id_disponibilite } (déplacer vers un autre créneau)
+  majRdv: (id, patch) =>
+    call(
+      `/rendezvous/${id}`,
+      { method: 'PUT', body: 'id_creneau' in patch ? { id_disponibilite: patch.id_creneau } : patch },
+      (db) => db.majRdv(me(), id, patch),
+      normRdv
+    ),
 
   // GET /api/patients/{id}/ordonnances  ·  GET /api/medecins/{id}/ordonnances
   ordonnancesPatient: (id) => call(`/patients/${id}/ordonnances`, {}, (db) => db.ordonnancesPatient(id), list(normOrdonnance)),

@@ -1,7 +1,3 @@
-## Captures d'écran
-![Accueil](docs/captures/acceuil1.png)
-![Espace patient](docs/captures/patient_medecin.png)
-![Espace médecin](docs/captures/medecin_tableau_de_bord.png)
 # frontend-ci : e-Santé Sénégal (interface React)
 
 Interface web de la plateforme de téléconsultation **e-Santé Sénégal**, conforme au document de modélisation UML (cas d'utilisation, classes, séquences, MCD/MLD).
@@ -64,36 +60,35 @@ npm run build      # build de production dans dist/
 
 **Mode démo** (développement uniquement) : si le backend est injoignable, l'application bascule seule sur un backend simulé (bandeau jaune, données dans le `localStorage`). Ce mode est **désactivé dans l'image Docker** (`VITE_ENABLE_DEMO=false`) : le code et les comptes fictifs ne sont pas inclus dans le site compilé, et une API coupée affiche un bandeau rouge « API injoignable ». Il applique les mêmes règles : double réservation refusée (409), transitions de statut contrôlées (422), ordonnance seulement après TERMINE (422), au moins une ligne. Comptes (mot de passe `Passer123`) : patient `awa.diop@esante.sn`, médecin `cheikh.fall@esante.sn`.
 
-## Contrat d'API attendu du backend
+## Contrat d'API (backend `backend-ci`)
 
-Routes issues des diagrammes de séquence (**S**) ; les routes marquées **(à valider)** ne figurent pas dans le document et sont à convenir avec le membre backend.
+Le frontend est testé de bout en bout avec le backend Flask du groupe (inscription, connexion, réservation, agenda, ordonnances). Les routes **(patch)** ont été ajoutées au backend pour les besoins de l'interface (voir `backend-ci-patch` : fichiers `app/api/patients.py`, `app/api/medecins.py`, etc.).
 
 | Méthode | Route | Corps / paramètres | Réponse |
 |---|---|---|---|
-| POST | `/api/auth/register` (S1) | `nom, prenom, email, mot_de_passe, telephone, date_naissance, adresse` | 201 ; 409 si email déjà utilisé |
-| POST | `/api/auth/login` (S1) | `email, mot_de_passe` | 200 `{ token, utilisateur: { id, nom, prenom, email, role } }` ; 401 |
-| GET | `/api/medecins?specialite=` (S2) | | `[{ id, nom, prenom, numero_ordre, biographie, tarif, specialite: { id, libelle } }]` |
-| GET | `/api/medecins/{id}/disponibilites` (S3) | | créneaux libres `[{ id, id_medecin, date_heure_debut, date_heure_fin, est_reserve }]` |
-| GET | `/api/medecins/{id}/disponibilites?toutes=true` **(à valider)** | | tous les créneaux du médecin connecté |
-| POST | `/api/medecins/{id}/disponibilites` **(à valider)** | `date_heure_debut, date_heure_fin` | 201 ; 409 si chevauchement |
-| DELETE | `/api/disponibilites/{id}` **(à valider)** | | 204 ; 409 si réservé |
-| POST | `/api/rendezvous` (S3) | `id_medecin, id_creneau, motif` | 201 ; **409** si créneau pris |
-| GET | `/api/patients/{id}/rendezvous` **(à valider)** | | liste de rendez-vous |
-| GET | `/api/medecins/{id}/rendezvous?date=` (S4) | `date` facultative | liste de rendez-vous |
-| PUT | `/api/rendezvous/{id}` (S4) | `{ statut }` ou `{ id_creneau }` (modifier) | 200 ; 422 transition interdite ; 403 |
-| GET | `/api/patients/{id}/ordonnances` · `/api/medecins/{id}/ordonnances` **(à valider)** | | liste d'ordonnances |
-| POST | `/api/rendezvous/{id}/ordonnance` (S5) | `instructions, lignes: [{ medicament, posologie, duree, quantite }]` | 201 ; **422** si RDV non terminé |
+| POST | `/api/auth/register` | `role` (`PATIENT`), `nom, prenom, email, mot_de_passe`, facultatifs : `telephone, date_naissance, adresse` | 201 ; 409 si email déjà utilisé |
+| POST | `/api/auth/login` | `email, mot_de_passe` | 200 `{ access_token, token_type, utilisateur: { id, nom, prenom, email, role } }` ; 401 |
+| GET | `/api/medecins?specialite=` | | `[{ id, nom, prenom, numero_ordre, biographie, tarif, specialite: { id, libelle } }]` |
+| GET | `/api/medecins/{id}/disponibilites` | | créneaux libres `[{ id, id_medecin, date_heure_debut, date_heure_fin, est_reserve }]` |
+| GET | `/api/medecins/{id}/disponibilites?toutes=true` **(patch)** | JWT médecin | tous les créneaux du médecin connecté |
+| POST | `/api/medecins/{id}/disponibilites` **(patch)** | `date_heure_debut, date_heure_fin` | 201 ; 409 si chevauchement |
+| DELETE | `/api/disponibilites/{id}` **(patch)** | | 204 ; 409 si réservé |
+| POST | `/api/rendezvous` | `id_disponibilite, motif` | 201 ; **409** si créneau pris |
+| GET | `/api/rendezvous?date=` | JWT médecin ; `today` ou `AAAA-MM-JJ` (facultatif) | agenda du médecin |
+| GET | `/api/patients/{id}/rendezvous` **(patch)** | JWT patient (le sien) | historique du patient |
+| PUT | `/api/rendezvous/{id}` | `{ statut }` ou `{ id_disponibilite }` (déplacer, **patch**) | 200 ; 422 transition interdite ; 403 |
+| GET | `/api/patients/{id}/ordonnances` · `/api/medecins/{id}/ordonnances` **(patch)** | JWT du propriétaire | liste d'ordonnances |
+| POST | `/api/rendezvous/{id}/ordonnance` | `instructions, lignes: [{ medicament, posologie, duree, quantite }]` | 201 ; **422** si RDV non terminé |
 
-Forme d'un rendez-vous : `{ id, date_heure, motif, statut, id_disponibilite, patient: { id, nom, prenom }, medecin: { id, nom, prenom, specialite: { libelle } } }`.
+Forme d'un rendez-vous : `{ id, date_heure, motif, statut, id_patient, id_medecin, id_disponibilite, patient: { id, nom, prenom }, medecin: { id, nom, prenom, specialite: { libelle } } }`.
 Forme d'une ordonnance : `{ id, date_emission, instructions, id_rendezvous, lignes: [...], medecin: {...}, patient: {...} }`.
 
 Points d'attention pour le backend :
-- Dates en **ISO 8601** (`2026-11-09T09:30:00`). Le `jsonify` de Flask sérialise les `datetime` au format HTTP par défaut : le frontend sait le lire, mais l'ISO est préférable.
-- Statuts en majuscules : `EN_ATTENTE`, `ACCEPTE`, `REFUSE`, `ANNULE`, `TERMINE` (enum `statut_rdv`).
-- Le jeton est envoyé en `Authorization: Bearer <jwt>`. Le rôle (`PATIENT` ou `MEDECIN`) doit figurer dans la réponse du login ou dans les claims du jeton.
+- Dates en **ISO 8601** (`2026-11-09T09:30:00`) ; statuts en majuscules (`EN_ATTENTE`, `ACCEPTE`, `REFUSE`, `ANNULE`, `TERMINE`).
+- Le jeton est envoyé en `Authorization: Bearer <jwt>` ; le rôle (`PATIENT` ou `MEDECIN`) figure dans la réponse du login et dans les claims du jeton.
 - Erreurs au format `{ "message": "..." }` : le texte est affiché à l'utilisateur.
-- `GET /api/medecins` doit rester accessible sans jeton (page d'accueil).
-- Annuler ou refuser un rendez-vous doit remettre `est_reserve = false` sur son créneau (séquence 4).
+- `GET /api/medecins` reste accessible sans jeton (page d'accueil).
+- Annuler ou refuser un rendez-vous remet `est_reserve = false` sur son créneau.
 
 ## Docker
 
