@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../api.js';
 import { ConfirmModal, Empty, Modal, SkeletonRows, StatusBadge, useToast } from '../components/ui.jsx';
 import OrdonnanceModal from '../components/OrdonnanceModal.jsx';
+import { Calendar, ChevronLeft, ChevronRight, Clock, FileText, Pencil, Pill, Plus, Search, X } from '../icons.jsx';
 import { addDays, dayParts, formatDateLong, formatDateShort, groupByDay, kpis, isActif, parseDT, slotsFromRange, todayISO } from '../utils.js';
 
 const SUGGESTIONS = ['Paracétamol 1 g', 'Amoxicilline 500 mg', 'Ibuprofène 400 mg', 'Oméprazole 20 mg', 'Sels de réhydratation orale', 'Amlodipine 5 mg'];
 const LIGNE_VIDE = { medicament: '', posologie: '', duree: '', quantite: '1' };
 
-// ───────────────────────── Modifier un rendez-vous (UC Modifier) ─────────────────────────
 function EditModal({ rdv, user, onClose, onSaved }) {
   const toast = useToast();
   const [slots, setSlots] = useState(null);
@@ -20,7 +20,6 @@ function EditModal({ rdv, user, onClose, onSaved }) {
       .disponibilites(user.id, true)
       .then((l) => {
         const now = new Date();
-        // créneaux libres et à venir + le créneau actuel de ce rendez-vous
         setSlots(l.filter((s) => s.id === rdv.idCreneau || (!s.reserve && parseDT(s.debut) > now)));
       })
       .catch((e) => {
@@ -37,7 +36,7 @@ function EditModal({ rdv, user, onClose, onSaved }) {
     setBusy(true);
     try {
       await api.majRdv(rdv.id, { id_creneau: creneau.id });
-      toast('Rendez-vous déplacé ✓');
+      toast('Rendez-vous déplacé');
       onSaved();
       onClose();
     } catch (e) {
@@ -73,7 +72,7 @@ function EditModal({ rdv, user, onClose, onSaved }) {
           ))}
         </div>
       ) : jours.length === 0 ? (
-        <Empty icon="🕒" title="Aucun créneau libre" text="Ajoutez des disponibilités depuis l’onglet « Disponibilités »." />
+        <Empty icon={<Clock size={32} />} title="Aucun créneau libre" text="Ajoutez des disponibilités depuis l'onglet « Disponibilités »." />
       ) : (
         <>
           <span className="label">Jour</span>
@@ -112,7 +111,6 @@ function EditModal({ rdv, user, onClose, onSaved }) {
   );
 }
 
-// ───────────────────────── Créer une ordonnance (UC Créer une ordonnance) ─────────────────────────
 function PrescribeModal({ rdv, onClose, onSaved }) {
   const toast = useToast();
   const [lignes, setLignes] = useState([{ ...LIGNE_VIDE }]);
@@ -136,7 +134,7 @@ function PrescribeModal({ rdv, onClose, onSaved }) {
           quantite: l.quantite === '' ? null : Number(l.quantite),
         })),
       });
-      toast('Ordonnance enregistrée ✓');
+      toast('Ordonnance enregistrée');
       onSaved();
       onClose();
     } catch (e) {
@@ -184,12 +182,12 @@ function PrescribeModal({ rdv, onClose, onSaved }) {
           <input className="input" placeholder="5 jours" aria-label="Durée" value={l.duree} onChange={(e) => update(i, 'duree', e.target.value)} />
           <input className="input" type="number" min="1" aria-label="Quantité" value={l.quantite} onChange={(e) => update(i, 'quantite', e.target.value)} />
           <button className="icon-btn" onClick={() => setLignes((x) => (x.length > 1 ? x.filter((_, j) => j !== i) : x))} aria-label="Retirer ce médicament" disabled={lignes.length === 1}>
-            ×
+            <X size={16} />
           </button>
         </div>
       ))}
       <button className="btn btn-ghost btn-sm" onClick={() => setLignes((l) => [...l, { ...LIGNE_VIDE }])}>
-        + Ajouter un médicament
+        <Plus size={14} /> Ajouter un médicament
       </button>
       {!quantiteOk && <p className="field-error">La quantité doit être supérieure à 0.</p>}
       <div className="field" style={{ marginTop: 16 }}>
@@ -202,7 +200,6 @@ function PrescribeModal({ rdv, onClose, onSaved }) {
   );
 }
 
-// ───────────────────────── Onglet « Disponibilités » (UC Gérer ses disponibilités) ─────────────────────────
 function DisposTab({ user }) {
   const toast = useToast();
   const [slots, setSlots] = useState(null);
@@ -236,7 +233,7 @@ function DisposTab({ user }) {
           await api.creerDisponibilite(user.id, c);
           ok++;
         } catch (e) {
-          if (e.status === 409) ignores++; // chevauche un créneau existant
+          if (e.status === 409) ignores++;
           else throw e;
         }
       }
@@ -287,7 +284,7 @@ function DisposTab({ user }) {
           </div>
           <div className="field">
             <label className="label" htmlFor="d-duree">
-              Durée d’un créneau
+              Durée d'un créneau
             </label>
             <select id="d-duree" className="select" value={form.duree} onChange={set('duree')}>
               {[20, 30, 45, 60].map((m) => (
@@ -301,13 +298,13 @@ function DisposTab({ user }) {
             {busy ? 'Ajout…' : `Ajouter ${apercu.length} créneau${apercu.length > 1 ? 'x' : ''}`}
           </button>
         </div>
-        {apercu.length === 0 && <p className="field-error">La fin doit être postérieure au début d’au moins une durée de créneau.</p>}
+        {apercu.length === 0 && <p className="field-error">La fin doit être postérieure au début d'au moins une durée de créneau.</p>}
       </div>
 
       {!slots ? (
         <SkeletonRows />
       ) : jours.length === 0 ? (
-        <Empty icon="🕒" title="Aucune disponibilité" text="Ajoutez vos premiers créneaux pour que les patients puissent réserver." />
+        <Empty icon={<Clock size={32} />} title="Aucune disponibilité" text="Ajoutez vos premiers créneaux pour que les patients puissent réserver." />
       ) : (
         <div className="list">
           {jours.map(({ date, slots: s }) => (
@@ -340,7 +337,6 @@ function DisposTab({ user }) {
   );
 }
 
-// ───────────────────────── Page ─────────────────────────
 export default function Medecin({ user }) {
   const toast = useToast();
   const [me, setMe] = useState(null);
@@ -374,7 +370,6 @@ export default function Medecin({ user }) {
     refresh();
   }, [user.id, refresh]);
 
-  // PUT /api/rendezvous/{id} { statut } : EN_ATTENTE -> ACCEPTE / REFUSE / ANNULE -> TERMINE
   async function setStatut(r, statut, msg) {
     setBusyId(r.id);
     try {
@@ -391,8 +386,7 @@ export default function Medecin({ user }) {
   }
 
   async function terminer(r) {
-    // Règle 7 : l'ordonnance n'est possible qu'une fois la consultation terminée
-    if (await setStatut(r, 'TERMINE', 'Consultation terminée ✓')) setPrescribe({ ...r, statut: 'TERMINE' });
+    if (await setStatut(r, 'TERMINE', 'Consultation terminée')) setPrescribe({ ...r, statut: 'TERMINE' });
   }
 
   const week = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(todayISO(), i - 3)), []);
@@ -412,7 +406,7 @@ export default function Medecin({ user }) {
     if (r.statut === 'EN_ATTENTE')
       return (
         <>
-          <button className="btn btn-primary btn-sm" disabled={busy} onClick={() => setStatut(r, 'ACCEPTE', 'Rendez-vous accepté ✓')}>
+          <button className="btn btn-primary btn-sm" disabled={busy} onClick={() => setStatut(r, 'ACCEPTE', 'Rendez-vous accepté')}>
             Accepter
           </button>
           <button className="btn btn-ghost btn-sm" onClick={() => setEdit(r)}>
@@ -440,11 +434,11 @@ export default function Medecin({ user }) {
     if (r.statut === 'TERMINE')
       return ord ? (
         <button className="btn btn-ghost btn-sm" onClick={() => setViewOrd(ord)}>
-          Voir l’ordonnance
+          Voir l'ordonnance
         </button>
       ) : (
         <button className="btn btn-primary btn-sm" onClick={() => setPrescribe(r)}>
-          Créer l’ordonnance
+          Créer l'ordonnance
         </button>
       );
     return null;
@@ -535,20 +529,20 @@ export default function Medecin({ user }) {
             <div className="toolbar">
               <div className="day-nav">
                 <button className="icon-btn" onClick={() => setDate(addDays(date, -1))} aria-label="Jour précédent">
-                  ‹
+                  <ChevronLeft size={18} />
                 </button>
                 <strong>{formatDateLong(date)}</strong>
                 <button className="icon-btn" onClick={() => setDate(addDays(date, 1))} aria-label="Jour suivant">
-                  ›
+                  <ChevronRight size={18} />
                 </button>
                 {date !== todayISO() && (
                   <button className="btn btn-ghost btn-sm" onClick={() => setDate(todayISO())}>
-                    Aujourd’hui
+                    Aujourd'hui
                   </button>
                 )}
               </div>
               <div className="search">
-                <span aria-hidden="true">🔍</span>
+                <Search size={16} aria-hidden="true" />
                 <input className="input" placeholder="Rechercher un patient…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Rechercher un patient" />
               </div>
             </div>
@@ -556,7 +550,7 @@ export default function Medecin({ user }) {
             {!rdvs ? (
               <SkeletonRows />
             ) : shown.length === 0 ? (
-              <Empty icon="🗓" title="Aucun rendez-vous" text={q ? 'Aucun patient ne correspond à cette recherche.' : 'Aucune consultation prévue ce jour-là.'} />
+              <Empty icon={<Calendar size={32} />} title="Aucun rendez-vous" text={q ? 'Aucun patient ne correspond à cette recherche.' : 'Aucune consultation prévue ce jour-là.'} />
             ) : (
               <div className="list">
                 {shown.map((r) => (
@@ -583,7 +577,7 @@ export default function Medecin({ user }) {
           (!ords ? (
             <SkeletonRows />
           ) : ords.length === 0 ? (
-            <Empty icon="💊" title="Aucune ordonnance" text="Les ordonnances que vous émettez apparaîtront ici." />
+            <Empty icon={<Pill size={32} />} title="Aucune ordonnance" text="Les ordonnances que vous émettez apparaîtront ici." />
           ) : (
             <div className="list">
               {[...ords]
@@ -591,7 +585,7 @@ export default function Medecin({ user }) {
                 .map((o) => (
                   <div key={o.id} className="card rdv-card">
                     <div className="rdv-date ord">
-                      <span aria-hidden="true">💊</span>
+                      <Pill size={20} aria-hidden="true" />
                     </div>
                     <div className="rdv-body">
                       <h3>{o.patientNom}</h3>

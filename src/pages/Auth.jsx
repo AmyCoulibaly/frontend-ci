@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useToast } from '../components/ui.jsx';
+import { Eye, EyeOff } from '../icons.jsx';
 import { isValidEmail, passwordStrength, todayISO } from '../utils.js';
 
 const ROLE_PAGE = { PATIENT: 'patient', MEDECIN: 'medecin' };
@@ -37,7 +38,7 @@ function PasswordField({ id, label, value, onChange, autoComplete, invalid }) {
           autoComplete={autoComplete}
         />
         <button type="button" className="pwd-toggle" onClick={() => setShow((s) => !s)} aria-label={show ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}>
-          {show ? '🙈' : '👁'}
+          {show ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>
       </div>
     </div>
@@ -53,7 +54,6 @@ export function Login({ demo, go, prefillEmail = '' }) {
   const [error, setError] = useState('');
   const [accounts, setAccounts] = useState(null);
 
-  // Comptes fictifs : uniquement en mode démo (et seulement si ce mode est inclus dans le build)
   useEffect(() => {
     if (demo) api.demoAccounts().then(setAccounts).catch(() => {});
   }, [demo]);
@@ -67,7 +67,7 @@ export function Login({ demo, go, prefillEmail = '' }) {
     try {
       const user = await api.login(email.trim(), pwd);
       if (!ROLE_PAGE[user.role]) throw new Error('Profil utilisateur non reconnu (rôle PATIENT ou MEDECIN attendu).');
-      toast(`Bienvenue ${user.prenom || ''} 👋`.trim());
+      toast(`Bienvenue ${user.prenom || ''}`.trim());
       go(ROLE_PAGE[user.role]);
     } catch (err) {
       setError(err.status === 401 ? 'Identifiants incorrects.' : err.message);
@@ -187,7 +187,7 @@ export function Register({ onRegistered }) {
       <AuthSide title="Créez votre compte patient" text="Un compte gratuit pour réserver vos consultations et suivre vos ordonnances." />
       <form className="card auth-card" onSubmit={submit} noValidate>
         <h1>Inscription</h1>
-        <p className="muted">Les champs marqués d’un * sont obligatoires.</p>
+        <p className="muted">Les champs marqués d'un * sont obligatoires.</p>
         {serverError && (
           <div className="err" role="alert">
             {serverError}

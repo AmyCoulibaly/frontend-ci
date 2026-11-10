@@ -1,10 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { Check, CircleAlert, Info, X } from '../icons.jsx';
 import { STATUTS, initials } from '../utils.js';
 
-// ───────── Notifications (toasts) ─────────
 const ToastCtx = createContext(() => {});
 export const useToast = () => useContext(ToastCtx);
-const TOAST_ICON = { ok: '✓', error: '!', info: 'i' };
+const TOAST_ICONS = { ok: Check, error: CircleAlert, info: Info };
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
@@ -17,18 +17,20 @@ export function ToastProvider({ children }) {
     <ToastCtx.Provider value={push}>
       {children}
       <div className="toasts" role="status" aria-live="polite">
-        {toasts.map((t) => (
-          <div key={t.id} className={`toast toast-${t.type}`}>
-            <span className="toast-icon">{TOAST_ICON[t.type]}</span>
-            <span>{t.message}</span>
-          </div>
-        ))}
+        {toasts.map((t) => {
+          const Icon = TOAST_ICONS[t.type] || Info;
+          return (
+            <div key={t.id} className={`toast toast-${t.type}`}>
+              <span className="toast-icon"><Icon size={13} strokeWidth={3} /></span>
+              <span>{t.message}</span>
+            </div>
+          );
+        })}
       </div>
     </ToastCtx.Provider>
   );
 }
 
-// ───────── Fenêtre modale (Échap et clic extérieur pour fermer) ─────────
 export function Modal({ title, onClose, children, footer, wide = false }) {
   const ref = useRef(null);
   useEffect(() => {
@@ -48,7 +50,7 @@ export function Modal({ title, onClose, children, footer, wide = false }) {
         <div className="modal-head">
           <h2>{title}</h2>
           <button className="icon-btn" onClick={onClose} aria-label="Fermer">
-            ×
+            <X size={18} />
           </button>
         </div>
         <div className="modal-body">{children}</div>
@@ -65,9 +67,7 @@ export function ConfirmModal({ title, message, confirmLabel = 'Confirmer', dange
       onClose={onClose}
       footer={
         <>
-          <button className="btn btn-ghost" onClick={onClose}>
-            Retour
-          </button>
+          <button className="btn btn-ghost" onClick={onClose}>Retour</button>
           <button className={`btn ${danger ? 'btn-danger-solid' : 'btn-primary'}`} onClick={onConfirm} disabled={busy}>
             {busy ? 'Patientez…' : confirmLabel}
           </button>
@@ -79,9 +79,8 @@ export function ConfirmModal({ title, message, confirmLabel = 'Confirmer', dange
   );
 }
 
-// ───────── Petits composants ─────────
 export function Avatar({ nom, id = 0, size = 48 }) {
-  const hue = (id * 47 + 20) % 360;
+  const hue = (id * 47 + 170) % 360;
   return (
     <div
       className="avatar"
@@ -89,7 +88,7 @@ export function Avatar({ nom, id = 0, size = 48 }) {
         width: size,
         height: size,
         fontSize: size * 0.36,
-        background: `linear-gradient(135deg, hsl(${hue} 65% 42%), hsl(${(hue + 40) % 360} 65% 34%))`,
+        background: `linear-gradient(135deg, hsl(${hue} 50% 40%), hsl(${(hue + 35) % 360} 50% 32%))`,
       }}
       aria-hidden="true"
     >
@@ -103,12 +102,10 @@ export function StatusBadge({ statut }) {
   return <span className={`badge badge-${s.tone}`}>{s.label}</span>;
 }
 
-export function Empty({ icon = '📭', title, text, action }) {
+export function Empty({ icon, title, text, action }) {
   return (
     <div className="empty">
-      <div className="empty-icon" aria-hidden="true">
-        {icon}
-      </div>
+      <div className="empty-icon" aria-hidden="true">{icon}</div>
       <h3>{title}</h3>
       {text && <p>{text}</p>}
       {action}
@@ -121,10 +118,10 @@ export function SkeletonCards({ n = 6 }) {
     <div className="grid" aria-busy="true">
       {Array.from({ length: n }, (_, i) => (
         <div key={i} className="card skeleton-card">
-          <div className="skeleton" style={{ width: 52, height: 52, borderRadius: 16 }} />
-          <div className="skeleton" style={{ width: '70%', height: 16 }} />
-          <div className="skeleton" style={{ width: '45%', height: 12 }} />
-          <div className="skeleton" style={{ width: '100%', height: 44 }} />
+          <div className="skeleton" style={{ width: 48, height: 48, borderRadius: 12 }} />
+          <div className="skeleton" style={{ width: '70%', height: 14 }} />
+          <div className="skeleton" style={{ width: '45%', height: 10 }} />
+          <div className="skeleton" style={{ width: '100%', height: 40 }} />
         </div>
       ))}
     </div>
@@ -135,7 +132,7 @@ export function SkeletonRows({ n = 3 }) {
   return (
     <div className="list" aria-busy="true">
       {Array.from({ length: n }, (_, i) => (
-        <div key={i} className="card skeleton" style={{ height: 88 }} />
+        <div key={i} className="card skeleton" style={{ height: 84 }} />
       ))}
     </div>
   );

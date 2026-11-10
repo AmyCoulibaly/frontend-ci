@@ -1,9 +1,7 @@
 // Pipeline CI du frontend : build, tests, scan du code, image Docker, scan Trivy, push Docker Hub.
-// Fonctionne sur un agent Linux (sh) comme sur un agent Windows (bat).
 // Prérequis Jenkins : Docker CLI accessible à l'agent, identifiants Docker Hub
-// enregistrés sous l'ID « dockerhub-creds » (Nom d'utilisateur + mot de passe/token).
+// enregistrés sous l'ID « dockerhub-credentials » (Nom d'utilisateur + mot de passe/token).
 
-// Exécute une commande avec sh (Linux) ou bat (Windows). Renvoie le code de sortie si status = true.
 def run(String cmd, boolean status = false) {
   if (isUnix()) {
     return sh(script: cmd, returnStatus: status)
@@ -11,7 +9,6 @@ def run(String cmd, boolean status = false) {
   return bat(script: cmd, returnStatus: status)
 }
 
-// Chemin du socket Docker à monter dans le conteneur Trivy
 def dockerSock() {
   return isUnix() ? '/var/run/docker.sock' : '//var/run/docker.sock'
 }
@@ -20,9 +17,11 @@ pipeline {
   agent any
 
   environment {
-    DOCKERHUB_USER = 'mbenend'          // à remplacer par le compte Docker Hub du groupe
-    IMAGE          = "${DOCKERHUB_USER}/esante-frontend"
-    TAG            = "${env.BUILD_NUMBER}"
+    DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
+    IMAGE          = "${DOCKERHUB_CREDENTIALS_USR}/esante-frontend"
+    DOCKERHUB_USER = "${DOCKERHUB_CREDENTIALS_USR}"
+    GIT_SHORT_SHA  = "${env.GIT_COMMIT?.take(7) ?: 'unknown'}"
+    TAG            = "${GIT_SHORT_SHA}-${env.BUILD_NUMBER}"
     TEST_IMAGE     = 'esante-frontend-test'
   }
 
@@ -33,7 +32,7 @@ pipeline {
   }
 
   triggers {
-    githubPush()   // déclenché par le webhook GitHub à chaque push
+    githubPush()
   }
 
   stages {
@@ -45,7 +44,6 @@ pipeline {
 
     stage('Installation et tests unitaires') {
       steps {
-        // npm ci + vitest s'exécutent dans l'étape « test » du Dockerfile
         script {
           run("docker build --target test -t ${TEST_IMAGE} .")
         }
@@ -54,7 +52,6 @@ pipeline {
 
     stage('Scan de sécurité du code (npm audit)') {
       steps {
-        // Le build passe en « instable » (et non en échec) si une vulnérabilité HIGH est trouvée
         script {
           int code = run("docker run --rm ${TEST_IMAGE} npm audit --omit=dev --audit-level=high > npm-audit.txt 2>&1", true)
           echo readFile('npm-audit.txt')
@@ -64,17 +61,6 @@ pipeline {
         }
       }
     }
-
-    // Optionnel : analyse SonarQube (nécessite un serveur SonarQube et son plugin Jenkins)
-    // stage('SonarQube') {
-    //   steps {
-    //     withSonarQubeEnv('sonarqube') {
-    //       script {
-    //         run("docker run --rm -e SONAR_HOST_URL=${env.SONAR_HOST_URL} -e SONAR_TOKEN=${env.SONAR_AUTH_TOKEN} -v \"${env.WORKSPACE}:/usr/src\" sonarsource/sonar-scanner-cli -Dsonar.projectKey=esante-frontend -Dsonar.sources=src")
-    //       }
-    //     }
-    //   }
-    // }
 
     stage('Build de l\'image Docker') {
       steps {
@@ -89,11 +75,9 @@ pipeline {
         script {
           def trivy = "docker run --rm -v ${dockerSock()}:/var/run/docker.sock -v trivy-cache:/root/.cache/ aquasec/trivy:latest image --timeout 30m"
 
-          // 1) Rapport complet HIGH et CRITICAL (archivé, ne bloque pas)
           run("${trivy} --severity HIGH,CRITICAL --exit-code 0 ${IMAGE}:${TAG} > trivy-report.txt 2>&1")
           echo readFile('trivy-report.txt')
 
-          // 2) Portail qualité : échec s'il reste une vulnérabilité CRITICAL corrigeable
           int gate = run("${trivy} --severity CRITICAL --ignore-unfixed --exit-code 1 --quiet ${IMAGE}:${TAG}", true)
           if (gate != 0) {
             error('Trivy : vulnérabilité CRITICAL corrigeable trouvée dans l\'image')
@@ -103,8 +87,14 @@ pipeline {
     }
 
     stage('Push vers Docker Hub') {
+      when {
+        anyOf {
+          branch 'main'
+          branch 'master'
+        }
+      }
       steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
           script {
             if (isUnix()) {
               sh 'echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin'
@@ -117,13 +107,6 @@ pipeline {
         }
       }
     }
-
-    // Optionnel : déclenche directement le job de déploiement (sinon webhook sur deployment-cd)
-    // stage('Déclencher le CD') {
-    //   steps {
-    //     build job: 'deployment-cd', wait: false, propagate: false
-    //   }
-    // }
   }
 
   post {

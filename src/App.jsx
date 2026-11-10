@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { checkHealth, getMode, getUser, logout, onModeChange, onSession } from './api.js';
+import { Moon, Sun, LogOut } from './icons.jsx';
 import { Avatar, ToastProvider } from './components/ui.jsx';
 import Accueil from './pages/Accueil.jsx';
 import { Login, Register } from './pages/Auth.jsx';
@@ -26,7 +27,6 @@ function initialTheme() {
   return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-// Pages réservées : l'espace patient au rôle PATIENT, l'espace médecin au rôle MEDECIN (UC « S'authentifier »)
 function allowed(page, user) {
   if (page === 'patient') return user?.role === 'PATIENT';
   if (page === 'medecin') return user?.role === 'MEDECIN';
@@ -63,14 +63,12 @@ export default function App() {
   useEffect(() => onModeChange(setMode), []);
   useEffect(() => onSession(setUser), []);
 
-  // Vérifie périodiquement que l'API répond
   useEffect(() => {
     checkHealth();
     const t = setInterval(checkHealth, 30000);
     return () => clearInterval(t);
   }, []);
 
-  // Redirections : page protégée sans bon rôle -> connexion ; déjà connecté -> son espace
   useEffect(() => {
     if (!allowed(page, user)) go('connexion');
     else if (user && (page === 'connexion' || page === 'inscription')) go(ROLE_PAGE[user.role] || 'accueil');
@@ -86,7 +84,7 @@ export default function App() {
         <header className="navbar">
           <div className="nav-inner">
             <a className="brand" href="#/accueil" aria-label="e-Santé Sénégal, accueil">
-              <img className="brand-logo" src="/logo.svg" alt="" width="38" height="38" />
+              <img className="brand-logo" src="/logo.svg" alt="" width="34" height="34" />
               <span>
                 e-Santé <b>Sénégal</b>
               </span>
@@ -106,7 +104,7 @@ export default function App() {
                     Connexion
                   </a>
                   <a href="#/inscription" className={`nav-link nav-cta ${page === 'inscription' ? 'active' : ''}`}>
-                    S’inscrire
+                    S'inscrire
                   </a>
                 </>
               )}
@@ -122,6 +120,7 @@ export default function App() {
                     go('accueil');
                   }}
                 >
+                  <LogOut size={15} />
                   Déconnexion
                 </button>
               </div>
@@ -132,19 +131,19 @@ export default function App() {
               aria-label={theme === 'dark' ? 'Activer le thème clair' : 'Activer le thème sombre'}
               title="Changer de thème"
             >
-              {theme === 'dark' ? '☀' : '☾'}
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
           </div>
         </header>
 
         {demo && (
           <div className="demo-banner" role="status">
-            Mode démonstration : l’API est injoignable, les données sont enregistrées localement dans votre navigateur.
+            Mode démonstration : l'API est injoignable, les données sont enregistrées localement.
           </div>
         )}
         {down && (
           <div className="demo-banner down" role="alert">
-            L’API est injoignable pour le moment. Vérifiez que le backend est démarré ; la connexion sera rétablie automatiquement.
+            L'API est injoignable. Vérifiez que le backend est démarré.
           </div>
         )}
 
@@ -167,7 +166,7 @@ export default function App() {
           <span>Projet DevOps · Master 2 SI-SR · UADB</span>
           <span className="status">
             <span className={`dot ${demo ? 'dot-warn' : down ? 'dot-down' : 'dot-ok'}`} />
-            {demo ? 'Mode démo (API indisponible)' : down ? 'API indisponible' : 'API connectée'}
+            {demo ? 'Mode démo' : down ? 'API indisponible' : 'API connectée'}
           </span>
         </footer>
       </div>

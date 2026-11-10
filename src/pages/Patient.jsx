@@ -2,11 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../api.js';
 import { Avatar, Empty, Modal, SkeletonCards, SkeletonRows, StatusBadge, useToast } from '../components/ui.jsx';
 import OrdonnanceModal from '../components/OrdonnanceModal.jsx';
+import { Calendar, CalendarClock, Check, Clock, ClipboardList, Pill, Search, Stethoscope, X } from '../icons.jsx';
 import { dayParts, formatDateLong, formatDateShort, formatPrix, groupByDay, isActif, parseDT, searchSortMedecins } from '../utils.js';
 
 const MOTIFS = ['Consultation générale', 'Suivi de traitement', 'Renouvellement d’ordonnance', 'Premier avis', 'Fièvre ou douleur'];
 
-// ───────────────────────── Onglet « Médecins » (UC Lister / Filtrer) ─────────────────────────
 function DoctorsTab({ onBook }) {
   const toast = useToast();
   const [specialites, setSpecialites] = useState([]);
@@ -15,7 +15,6 @@ function DoctorsTab({ onBook }) {
   const [q, setQ] = useState('');
   const [tri, setTri] = useState('nom');
 
-  // Le filtre par spécialité est appliqué par le serveur : GET /api/medecins?specialite=...
   useEffect(() => {
     let annule = false;
     setMedecins(null);
@@ -43,11 +42,11 @@ function DoctorsTab({ onBook }) {
     <>
       <div className="toolbar">
         <div className="search">
-          <span aria-hidden="true">🔍</span>
+          <Search size={16} aria-hidden="true" />
           <input className="input" placeholder="Rechercher un médecin…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Rechercher un médecin" />
           {q && (
             <button className="clear" onClick={() => setQ('')} aria-label="Effacer la recherche">
-              ×
+              <X size={14} />
             </button>
           )}
         </div>
@@ -74,7 +73,7 @@ function DoctorsTab({ onBook }) {
         <SkeletonCards n={6} />
       ) : list.length === 0 ? (
         <Empty
-          icon="🩺"
+          icon={<Stethoscope size={32} />}
           title="Aucun médecin disponible"
           text="Aucun médecin ne correspond à votre recherche."
           action={
@@ -103,7 +102,7 @@ function DoctorsTab({ onBook }) {
               <p className="doc-bio">{m.biographie || 'Aucune présentation renseignée.'}</p>
               {m.numeroOrdre && (
                 <div className="tags">
-                  <span className="tag">N° d’ordre {m.numeroOrdre}</span>
+                  <span className="tag">N° d'ordre {m.numeroOrdre}</span>
                 </div>
               )}
               <div className="doc-foot">
@@ -120,7 +119,6 @@ function DoctorsTab({ onBook }) {
   );
 }
 
-// ───────────────────────── Réservation (UC Consulter les disponibilités + Réserver) ─────────────────────────
 function BookingModal({ medecin, onClose, onDone, onGoRdv }) {
   const [slots, setSlots] = useState(null);
   const [date, setDate] = useState(null);
@@ -137,7 +135,7 @@ function BookingModal({ medecin, onClose, onDone, onGoRdv }) {
       .disponibilites(medecin.id)
       .then((l) => {
         const now = new Date();
-        const libres = l.filter((s) => !s.reserve && parseDT(s.debut) > now); // défense : jamais de créneau réservé ou passé
+        const libres = l.filter((s) => !s.reserve && parseDT(s.debut) > now);
         setSlots(libres);
         const jours = groupByDay(libres);
         setDate((d) => (jours.some((j) => j.date === d) ? d : jours[0]?.date ?? null));
@@ -166,7 +164,7 @@ function BookingModal({ medecin, onClose, onDone, onGoRdv }) {
       setError(e.status === 409 ? e.message || 'Créneau indisponible, veuillez en choisir un autre.' : e.message);
       if (e.status === 409) {
         setStep(1);
-        loadSlots(); // le créneau vient d'être pris : on recharge les créneaux libres
+        loadSlots();
       }
     } finally {
       setBusy(false);
@@ -177,30 +175,20 @@ function BookingModal({ medecin, onClose, onDone, onGoRdv }) {
   const footer =
     step === 1 ? (
       <>
-        <button className="btn btn-ghost" onClick={onClose}>
-          Annuler
-        </button>
-        <button className="btn btn-primary" disabled={!creneau} onClick={() => setStep(2)}>
-          Continuer
-        </button>
+        <button className="btn btn-ghost" onClick={onClose}>Annuler</button>
+        <button className="btn btn-primary" disabled={!creneau} onClick={() => setStep(2)}>Continuer</button>
       </>
     ) : step === 2 ? (
       <>
-        <button className="btn btn-ghost" onClick={() => setStep(1)}>
-          Retour
-        </button>
+        <button className="btn btn-ghost" onClick={() => setStep(1)}>Retour</button>
         <button className="btn btn-primary" disabled={busy || motif.trim().length < 3} onClick={submit}>
           {busy ? 'Réservation…' : 'Confirmer la réservation'}
         </button>
       </>
     ) : (
       <>
-        <button className="btn btn-ghost" onClick={onClose}>
-          Fermer
-        </button>
-        <button className="btn btn-primary" onClick={onGoRdv}>
-          Voir mes rendez-vous
-        </button>
+        <button className="btn btn-ghost" onClick={onClose}>Fermer</button>
+        <button className="btn btn-primary" onClick={onGoRdv}>Voir mes rendez-vous</button>
       </>
     );
 
@@ -209,16 +197,14 @@ function BookingModal({ medecin, onClose, onDone, onGoRdv }) {
       <ol className="stepper">
         {labels.map((l, i) => (
           <li key={l} className={`stepper-item ${step === i + 1 ? 'active' : ''} ${step > i + 1 ? 'done' : ''}`}>
-            <span>{step > i + 1 ? '✓' : i + 1}</span>
+            <span>{step > i + 1 ? <Check size={14} /> : i + 1}</span>
             {l}
           </li>
         ))}
       </ol>
 
       {error && (
-        <div className="err" role="alert">
-          {error}
-        </div>
+        <div className="err" role="alert">{error}</div>
       )}
 
       {step === 1 &&
@@ -229,7 +215,7 @@ function BookingModal({ medecin, onClose, onDone, onGoRdv }) {
             ))}
           </div>
         ) : jours.length === 0 ? (
-          <Empty icon="🕒" title="Aucun créneau libre" text="Ce médecin n’a pas de disponibilité pour le moment. Revenez plus tard ou choisissez un autre médecin." />
+          <Empty icon={<Clock size={32} />} title="Aucun créneau libre" text="Ce médecin n'a pas de disponibilité pour le moment. Revenez plus tard ou choisissez un autre médecin." />
         ) : (
           <>
             <span className="label">Choisissez un jour</span>
@@ -313,7 +299,7 @@ function BookingModal({ medecin, onClose, onDone, onGoRdv }) {
           </svg>
           <h3>Réservation confirmée !</h3>
           <p>
-            Votre rendez-vous avec <strong>{medecin.nomComplet}</strong> le <strong>{formatDateLong(creneau.date)}</strong> à <strong>{creneau.heure}</strong> est en attente d’acceptation par le médecin.
+            Votre rendez-vous avec <strong>{medecin.nomComplet}</strong> le <strong>{formatDateLong(creneau.date)}</strong> à <strong>{creneau.heure}</strong> est en attente d'acceptation par le médecin.
           </p>
         </div>
       )}
@@ -321,7 +307,6 @@ function BookingModal({ medecin, onClose, onDone, onGoRdv }) {
   );
 }
 
-// ───────────────────────── Onglet « Mes rendez-vous » (UC Consulter l'historique) ─────────────────────────
 function RdvTab({ rdvs, ords, onViewOrd }) {
   const [filter, setFilter] = useState('tous');
 
@@ -350,7 +335,7 @@ function RdvTab({ rdvs, ords, onViewOrd }) {
       {!shown ? (
         <SkeletonRows />
       ) : shown.length === 0 ? (
-        <Empty icon="📅" title="Aucun rendez-vous" text="Vos rendez-vous apparaîtront ici." />
+        <Empty icon={<Calendar size={32} />} title="Aucun rendez-vous" text="Vos rendez-vous apparaîtront ici." />
       ) : (
         <div className="list">
           {shown.map((r) => {
@@ -372,7 +357,7 @@ function RdvTab({ rdvs, ords, onViewOrd }) {
                   <StatusBadge statut={r.statut} />
                   {ord && (
                     <button className="btn btn-ghost btn-sm" onClick={() => onViewOrd(ord)}>
-                      Voir l’ordonnance
+                      Voir l'ordonnance
                     </button>
                   )}
                 </div>
@@ -385,10 +370,9 @@ function RdvTab({ rdvs, ords, onViewOrd }) {
   );
 }
 
-// ───────────────────────── Onglet « Mes ordonnances » ─────────────────────────
 function OrdTab({ ords, onView }) {
   if (!ords) return <SkeletonRows />;
-  if (ords.length === 0) return <Empty icon="💊" title="Aucune ordonnance" text="Vos ordonnances apparaîtront ici après vos consultations." />;
+  if (ords.length === 0) return <Empty icon={<Pill size={32} />} title="Aucune ordonnance" text="Vos ordonnances apparaîtront ici après vos consultations." />;
   return (
     <div className="list">
       {[...ords]
@@ -396,7 +380,7 @@ function OrdTab({ ords, onView }) {
         .map((o) => (
           <div key={o.id} className="card rdv-card">
             <div className="rdv-date ord">
-              <span aria-hidden="true">💊</span>
+              <Pill size={20} aria-hidden="true" />
             </div>
             <div className="rdv-body">
               <h3>Ordonnance du {formatDateShort(o.date)}</h3>
@@ -416,7 +400,6 @@ function OrdTab({ ords, onView }) {
   );
 }
 
-// ───────────────────────── Page ─────────────────────────
 export default function Patient({ user }) {
   const toast = useToast();
   const [tab, setTab] = useState('medecins');
@@ -451,14 +434,14 @@ export default function Patient({ user }) {
     <>
       <div className="page-head">
         <div>
-          <h1 className="page-title">Bonjour, {user.prenom || 'cher patient'} 👋</h1>
+          <h1 className="page-title">Bonjour, {user.prenom || 'cher patient'}</h1>
           <p className="subtitle">Trouvez un médecin et suivez vos rendez-vous.</p>
         </div>
       </div>
 
       {prochain && (
         <div className="next-banner">
-          <span aria-hidden="true">⏰</span>
+          <CalendarClock size={20} aria-hidden="true" />
           <div>
             <strong>Prochain rendez-vous</strong> : {formatDateLong(prochain.date)} à {prochain.heure} avec {prochain.medecinNom}{' '}
             {prochain.statut === 'EN_ATTENTE' && '(en attente d’acceptation)'}
@@ -493,7 +476,7 @@ export default function Patient({ user }) {
           onClose={() => setBooking(null)}
           onDone={() => {
             refresh();
-            toast('Réservation enregistrée ✓');
+            toast('Réservation enregistrée');
           }}
           onGoRdv={() => {
             setBooking(null);

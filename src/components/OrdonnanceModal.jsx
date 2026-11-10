@@ -1,7 +1,7 @@
+import { Printer } from '../icons.jsx';
 import { Modal } from './ui.jsx';
 import { formatDateLong } from '../utils.js';
 
-// Ordonnance numérique (Ordonnance + LigneOrdonnance du modèle), imprimable : @media print n'affiche que .print-area
 export default function OrdonnanceModal({ ord, onClose }) {
   return (
     <Modal
@@ -14,7 +14,8 @@ export default function OrdonnanceModal({ ord, onClose }) {
             Fermer
           </button>
           <button className="btn btn-primary" onClick={() => window.print()}>
-            🖨 Imprimer / Enregistrer en PDF
+            <Printer size={16} />
+            Imprimer / PDF
           </button>
         </>
       }
@@ -22,7 +23,7 @@ export default function OrdonnanceModal({ ord, onClose }) {
       <div className="print-area ordo">
         <div className="ordo-head">
           <div className="ordo-id">
-            <img className="brand-logo" src="/logo.svg" alt="" width="44" height="44" />
+            <img className="brand-logo" src="/logo.svg" alt="" width="40" height="40" />
             <div>
               <strong className="ordo-brand">e-Santé Sénégal</strong>
               <div className="muted">Téléconsultation et suivi médical</div>
@@ -54,9 +55,7 @@ export default function OrdonnanceModal({ ord, onClose }) {
           <tbody>
             {ord.lignes.map((l, i) => (
               <tr key={l.id ?? i}>
-                <td>
-                  <strong>{l.medicament}</strong>
-                </td>
+                <td><strong>{l.medicament}</strong></td>
                 <td>{l.posologie || '—'}</td>
                 <td>{l.duree || '—'}</td>
                 <td>{l.quantite ?? '—'}</td>

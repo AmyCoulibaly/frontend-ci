@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
+import { Search, Calendar, ClipboardList, Pill, Activity, Clock, CalendarCheck, FileText } from '../icons.jsx';
 
 function useCountUp(target, ms = 1100) {
   const [v, setV] = useState(0);
@@ -29,12 +30,12 @@ function Stat({ value, label }) {
 }
 
 const FEATURES = [
-  { icon: '🔎', titre: 'Trouver le bon médecin', texte: 'Listez les médecins disponibles et filtrez-les par spécialité.' },
-  { icon: '📅', titre: 'Réserver en 3 clics', texte: 'Choisissez un jour, un créneau libre, indiquez votre motif : la demande part au médecin.' },
-  { icon: '🗂', titre: 'Historique centralisé', texte: 'Retrouvez tous vos rendez-vous et leur statut au même endroit.' },
-  { icon: '💊', titre: 'Ordonnances numériques', texte: 'Consultez et imprimez vos ordonnances sans papier à conserver.' },
-  { icon: '📊', titre: 'Tableau de bord médecin', texte: 'Consultations du jour, acceptation, report ou annulation des rendez-vous.' },
-  { icon: '🕒', titre: 'Disponibilités maîtrisées', texte: 'Le médecin publie ses créneaux : un créneau réservé ne peut jamais l’être deux fois.' },
+  { icon: <Search size={22} />, titre: 'Trouver le bon médecin', texte: 'Listez les médecins disponibles et filtrez-les par spécialité.' },
+  { icon: <Calendar size={22} />, titre: 'Réserver en 3 clics', texte: 'Choisissez un jour, un créneau libre, indiquez votre motif : la demande part au médecin.' },
+  { icon: <ClipboardList size={22} />, titre: 'Historique centralisé', texte: 'Retrouvez tous vos rendez-vous et leur statut au même endroit.' },
+  { icon: <Pill size={22} />, titre: 'Ordonnances numériques', texte: 'Consultez et imprimez vos ordonnances sans papier à conserver.' },
+  { icon: <Activity size={22} />, titre: 'Tableau de bord médecin', texte: 'Consultations du jour, acceptation, report ou annulation des rendez-vous.' },
+  { icon: <Clock size={22} />, titre: 'Disponibilités maîtrisées', texte: 'Le médecin publie ses créneaux : un créneau réservé ne peut jamais l’être deux fois.' },
 ];
 
 const ETAPES = [
@@ -59,7 +60,7 @@ export default function Accueil({ user, go }) {
     <>
       <section className="hero">
         <div className="hero-text">
-          <span className="eyebrow">🇸🇳 La santé connectée au Sénégal</span>
+          <span className="eyebrow">La santé connectée au Sénégal</span>
           <h1>
             Consultez un médecin, <span className="grad">sans faire la queue.</span>
           </h1>
@@ -97,14 +98,14 @@ export default function Accueil({ user, go }) {
             </div>
           </div>
           <div className="float-card fc-2">
-            <div className="fc-icon">💊</div>
+            <div className="fc-icon"><FileText size={24} /></div>
             <div>
               <strong>Ordonnance disponible</strong>
               <span>Prête à imprimer</span>
             </div>
           </div>
           <div className="float-card fc-3">
-            <div className="fc-icon">📅</div>
+            <div className="fc-icon"><CalendarCheck size={24} /></div>
             <div>
               <strong>Créneau réservé</strong>
               <span>En attente de confirmation</span>
@@ -144,11 +145,11 @@ export default function Accueil({ user, go }) {
         <section className="cta-band">
           <div>
             <h2>Prêt à essayer ?</h2>
-            <p>Créez un compte patient en moins d’une minute.</p>
+            <p>Créez un compte patient en moins d'une minute.</p>
           </div>
           <div className="cta-row">
             <button className="btn btn-light" onClick={() => go('inscription')}>
-              S’inscrire
+              S'inscrire
             </button>
             <button className="btn btn-outline-light" onClick={() => go('connexion')}>
               Se connecter
